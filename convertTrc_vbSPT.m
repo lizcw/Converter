@@ -68,4 +68,6 @@ X.longestTraj=max(trajLengths);
 X.Dapp=Dapp;
 X.occProb=occProb;
 
-save(output, '-struct','X');    
+save(output, '-struct','X');
+msg = sprintf('Output file saved to %s',output);
+msgbox(msg);
