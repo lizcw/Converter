@@ -19,14 +19,23 @@ do_single = false;
 do_transRate = false;
 do_transMat = false;
 %Load datafile for conversion
-[filename,filepath] = uigetfile('*.trc','Select trc file');
+[filename,filepath] = uigetfile({'*.trc';'*.csv'},'Select trc or csv file');
+inputfile = fullfile(filepath,filename);
 outputfile = sprintf('%s_converted.mat',filename);
 output = fullfile(filepath, outputfile);
-csvdata = csvread(filename);
-numTraj = max(csvdata(:,1));
+%If problems with csvread - replace with importdata
+if (strfind(filename,'csv'))
+    csvdata = csvread(inputfile,1,0);
+else
+    csvdata = csvread(inputfile);
+end
+%detect track numbers
+tx = unique(csvdata(:,1));
+tnum = len(tx);
+numTraj = max(tx);
 Traj = cell(1,numTraj); 
 trajLengths = zeros(1,numTraj);
-tnum = 1;
+
 for i=1:length(csvdata)
     track = csvdata(i,1);
     frame = csvdata(i,2);
@@ -49,8 +58,20 @@ for i=1:length(csvdata)
     trajLengths(track) = trajLengths(track) + d;
     %Trajlengths(track)
 end
+%% Remove any empty tracks
+T1 = cell(1,length(tx)); 
+tL = zeros(1,length(tx));
+c = 1;
+for i =1 : numTraj
+    if (~isempty(Traj{i}))
+        T1{c} = Traj{i};
+        tL(c) = trajLengths(i);
+        c = c + 1;
+    end
+end
+
 %% List the parameters
-X.trajLengths=trajLengths;
+X.trajLengths=tL;
 X.runs=runs;
 X.do_steadystate=do_steadystate;
 X.do_parallel=do_parallel;
@@ -60,14 +81,15 @@ X.Radius=Radius;
 X.timestep=timestep;
 X.stepSize=stepSize;
 X.locAccuracy=locAccuracy;
-X.finalTraj=Traj;
-X.numTraj=numTraj; % = length(trajLengths)
-X.avTrajLength=mean(trajLengths);
-X.shortestTraj=min(trajLengths);
-X.longestTraj=max(trajLengths);
+X.finalTraj=T1;
+X.numTraj=length(tL)
+X.avTrajLength=mean(tL);
+X.shortestTraj=min(tL);
+X.longestTraj=max(tL);
 X.Dapp=Dapp;
 X.occProb=occProb;
 
 save(output, '-struct','X');
 msg = sprintf('Output file saved to %s',output);
+disp(msg);
 msgbox(msg);
