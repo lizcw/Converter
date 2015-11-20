@@ -4,11 +4,11 @@ clear all
 CylinderL = 40; % nm (length of cylindrical part only)
 Radius = 20;  % nm    (spherical end caps, and cylinder radius)
 % initiate options
-timestep = 0; % [s]
+timestep = 0.02; % [20ms]
 stepSize = 5; %[nm]
 locAccuracy = 0; %[nm]
-transMat = 0; % [/timestep]
-transRate = 0; % [/s]
+transMat = [0.958 0.0421;0.084 0.9158]; % [/timestep]
+transRate = [-15 15;30 -30]; % [/s]
 occProb = 0;
 Dapp = 0;
 %trajLengths = 0;
@@ -31,7 +31,7 @@ else
 end
 %detect track numbers
 tx = unique(csvdata(:,1));
-tnum = len(tx);
+tnum = length(tx);
 numTraj = max(tx);
 Traj = cell(1,numTraj); 
 trajLengths = zeros(1,numTraj);
@@ -41,19 +41,20 @@ for i=1:length(csvdata)
     frame = csvdata(i,2);
     x = csvdata(i,3);
     y = csvdata(i,4);
+    %calculates actual length but only require number of points
     if (i > 1 && track == cachetrack)    
         d = sqrt((x - cachex)^2 + (y-cachey)^2);
-        timestep = frame - cacheframe;
+        fstep = frame - cacheframe;
     else
        d = 0;
-       timestep = 1;
+       fstep = 1;
     end
     %cache
     cachex = x;
     cachey = y;
     cacheframe = frame;
     cachetrack = track;
-    Traj{track} = cat(1,Traj{track},[x y round(timestep)]);
+    Traj{track} = cat(1,Traj{track},[x y fstep]);
     %Traj{track}
     trajLengths(track) = trajLengths(track) + d;
     %Trajlengths(track)
@@ -76,8 +77,8 @@ X.runs=runs;
 X.do_steadystate=do_steadystate;
 X.do_parallel=do_parallel;
 X.do_single=do_single;
-X.CylinderL=CylinderL;
-X.Radius=Radius;
+X.cylL=CylinderL;
+X.cylRadius=Radius;
 X.timestep=timestep;
 X.stepSize=stepSize;
 X.locAccuracy=locAccuracy;
@@ -88,6 +89,8 @@ X.shortestTraj=min(tL);
 X.longestTraj=max(tL);
 X.Dapp=Dapp;
 X.occProb=occProb;
+X.transMat=transMat;
+X.transRate=transRate;
 
 save(output, '-struct','X');
 msg = sprintf('Output file saved to %s',output);
